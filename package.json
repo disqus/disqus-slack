@@ -12,7 +12,11 @@
   "dependencies": {
     "express": "^4.15.3",
     "body-parser": "^1.17.2",
-    "request": "^2.81.0"
+    "request": "^2.81.0",
+    "passport": "^0.4.0",
+    "express-session": "^1.15.5",
+    "passport-slack": "^0.0.7",
+    "cookie-parser": "^1.4.3"
   },
   "engines": {
     "node": "8.x"

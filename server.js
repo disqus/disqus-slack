@@ -4,7 +4,7 @@ var request = require('request');
 var app = express();
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static('public'));
 
 app.get('/auth/slack', function(req, res){

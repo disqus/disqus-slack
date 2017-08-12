@@ -1,97 +1,28 @@
-// server.js
-// where your node app starts
-
-// init project
 var express = require('express');
-var expressSession = require('express-session');
 var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
 var request = require('request');
 var app = express();
-// set up slack passport for oauth
-var passport = require('passport');
-var SlackStrategy = require('passport-slack').Strategy;
 
-// the process.env values are set in .env
-passport.use(new SlackStrategy({
-  clientID: process.env.SLACK_CLIENT_ID,
-  clientSecret: process.env.SLACK_CLIENT_SECRET,
-  callbackURL: 'https://'+process.env.PROJECT_DOMAIN+'.glitch.me/login/slack/return'
-},
-function(token, tokenSecret, profile, cb) {
-  return cb(null, profile);
-}));
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-passport.deserializeUser(function(obj, done) {
-  done(null, obj);
-});
-
-app.use( bodyParser.json() );       // to support JSON-encoded bodies
-app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
-  extended: true
-})); 
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(expressSession({ secret:'watchingferries', resave: true, saveUninitialized: true, maxAge: (90 * 24 * 3600000) }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-// we've started you off with Express, 
-// but feel free to use whatever libs or frameworks you'd like through `package.json`.
-
-// http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'));
 
-app.get('/logoff',
-  function(req, res) {
-    res.clearCookie('slack-passport-example');
-    res.redirect('/');
-  }
-);
-
-app.get('/auth/slack', passport.authenticate('slack'));
-
-app.get('/login/slack/return', 
-  passport.authenticate('slack', 
-    { successRedirect: '/setcookie', failureRedirect: '/' }
-  )
-);
-
-app.get('/setcookie', requireUser,
-  function(req, res) {
-    res.cookie('slack-passport-example', new Date());
-    res.redirect('/success');
-  }
-);
-
-function requireUser (req, res, next) {
-  if (!req.user) {
-    res.redirect('/');
-  } else {
-    next();
-  }
-};
-
-app.get('/success', requireLogin,
-  function(req, res) {
-    if(req.cookies['slack-passport-example']) {
-      res.sendFile(__dirname + '/views/success.html');
-    } else {
-      res.redirect('/');
+app.get('/auth/slack', function(req, res){
+  var data = {form: {
+      client_id: process.env.SLACK_CLIENT_ID,
+      client_secret: process.env.SLACK_CLIENT_SECRET,
+      code: req.query.code
+  }};
+  request.post('https://slack.com/api/oauth.access', data, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      // You are done.
+      // If you want to get team info, you need to get the token here
+      var jbody = JSON.parse(body);
+      if (jbody.access_token)
+        res.redirect('https://' + jbody.team_name + '.slack.com/apps/manage');
     }
-  }
-);
-
-function requireLogin (req, res, next) {
-  if (!req.cookies['slack-passport-example']) {
-    res.redirect('/');
-  } else {
-    next();
-  }
-};
+  });
+});
 
 app.post("/", function (req, res) {
   var text = req.body.text;
@@ -104,7 +35,6 @@ app.post("/", function (req, res) {
     } else {
         msgid = msg.input.substr(msg.index + 9)
     }
-    console.log(msgid);
     var url = 'https://disqus.com/api/3.0/posts/details.json?api_key=' + process.env.DISQUS_API_KEY + '&post=' + msgid;
     request(url, function (err2, res2, body) {
       if(body) {

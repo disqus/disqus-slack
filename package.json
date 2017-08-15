@@ -12,7 +12,8 @@
   "dependencies": {
     "body-parser": "^1.17.2",
     "express": "^4.15.4",
-    "request": "^2.81.0"
+    "request": "^2.81.0",
+    "universal-analytics": "^0.4.15"
   },
   "engines": {
     "node": "8.x"

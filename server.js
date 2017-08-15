@@ -2,6 +2,9 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
 var app = express();
+var ua = require('universal-analytics');
+
+var visitor = ua('UA-4667606-5');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
@@ -18,8 +21,12 @@ app.get('/auth/slack', function(req, res){
       // You are done.
       // If you want to get team info, you need to get the token here
       var jbody = JSON.parse(body);
-      if (jbody.access_token)
-        res.redirect('https://' + jbody.team_name + '.slack.com/apps/manage');
+      if (jbody.access_token) {
+        request.post('https://slack.com/api/team.info?token='+jbody.access_token, null, function (e2, r2, b2) {
+          var jb2 = JSON.parse(b2);
+          res.redirect('https://' + jb2.team.domain + '.slack.com/apps/manage');
+        });
+      }
     }
   });
 });
@@ -40,6 +47,7 @@ app.post("/", function (req, res) {
       if(body) {
         body = JSON.parse(body);
         if (body.response.raw_message) {
+          visitor.pageview("/").send();
           res.json({
             response_type: 'in_channel',
             attachments: [{
